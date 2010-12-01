@@ -1,0 +1,15 @@
+Distributed issue tracking (in (FX)Ruby)
+========================================
+ss1978 <ss1978@lajt.hu>
+
+== About mytix ==
+A simple batteries-included isse tracking.
+
+The script uses yaml files for storing tickets, these yaml files can be easyily version controlled with git, etc.
+
+== Installation ==
+
+. Just copy the `mytix.rb` file in the PATH (like `/usr/local/bin`)
+. Call `mytix init` in the desired directory.
+. Edit `.mytix.yaml` to fit to your needs.
+
