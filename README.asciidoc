@@ -5,7 +5,14 @@ ss1978 <ss1978@lajt.hu>
 == About mytix ==
 A simple batteries-included isse tracking.
 
-The script uses yaml files for storing tickets, these yaml files can be easyily version controlled with git, etc.
+== Features ==
+* Ticket data stored in yaml files
+* Customizable severity, status
+* Colorised Console output
+* Optional GUI (FXRuby)
+* Customizable trigger after creating a ticket, adding attachment.
+* Comments
+* Attachments
 
 == Installation ==
 
