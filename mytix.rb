@@ -38,33 +38,34 @@
 # mytix [command] [arguments]
 #
 # For help use: 
-# 	mytix.rb -h
+# 	mytix -h
 # or 
-# 	mytix.rb --help
+# 	mytix --help
 # For version info:
-# 	mytix.rb -v
+# 	mytix -v
 # or 
-#	mytix.rb --version
+#	mytix --version
 # Commands are:
-# [init				]
+# [init						]
 # 	Initializes the mytix environment
-# [list				]
-# 	Lists the tickets.
-# [add <TICKET_NAME>		]
+# [list	{status/tag}*n {+-{property}}		]
+# 	Lists the tickets with status or tag with the supplied order.
+# 	+/-{property} tells the ordering, other parameters defines filtering
+# [add <TICKET_NAME>				]
 # 	Adds a ticket to the database
-# [show <TICKET_ID>		]
+# [show <TICKET_ID>				]
 # 	Shows the tickets from the database
-# [attach <TICKET_ID> ({MESSAGE} <FILENAME>)*n]
+# [attach <TICKET_ID> ({MESSAGE} <FILENAME>)*n	]
 #   Adds attachment with name to the ticket.
-# [status <TICKET_ID> <STATUS>	]
+# [status <TICKET_ID> <STATUS>			]
 # 	Sets status for the ticket.
-# [comment <TICKET_ID> <COMMENT>	]
+# [comment <TICKET_ID> <COMMENT>			]
 # 	Adds comment for the ticket.
-# [gadd {TICKET NAME}		]
+# [gadd {TICKET NAME}				]
 # 	Adds a ticket to the database using GUI
-# [glist				]
+# [glist						]
 # 	Lists the tickets using gui.
-# [gedit <TICKET_ID>		]
+# [gedit <TICKET_ID>				]
 # 	Edits the selected ticket.
 #
 #
@@ -480,7 +481,7 @@ module BOM
 			
 			if add
 				cmd = @options.after_add_ticket
-				if cmd
+				if cmd and not cmd.empty?
 					system( "#{cmd} \"#{destDir}\"" )
 				end
 			end
@@ -493,6 +494,7 @@ end
 #
 #TODO: cache should be expired immediately after ticket change. Currently it costs to seconds.
 class TicketHandler
+	attr_reader :ready_to_run
 
 	#Constructor.
 	def initialize( options )
@@ -500,8 +502,15 @@ class TicketHandler
 		@cache = Array.new()
 		@cache_for_id = {}
 		@cache_for_name = {}
-		Dir.mkdir( @options.cache_directory ) if not File.directory?(  @options.cache_directory  )
-		rebuildCache
+		@ready_to_run = false
+		if @options and @options.cache_directory 
+			Dir.mkdir( @options.cache_directory ) if not File.directory?(  @options.cache_directory  )
+			@ready_to_run = true
+			rebuildCache
+		else
+			puts "MyTix environment not initialized."
+			puts "Please run \"mytix init\" first!"
+		end
 	end
 
 	#Updates cache entries for the provided ticket
@@ -580,9 +589,26 @@ class TicketHandler
 		end
 	end
 
-	#Sorts tickets.
-	def each( sort = "created", dir = 1 )
-		@cache.sort{ |a,b| dir * (a.data.send( sort )<=> b.data.send( sort )) } .each do |i|
+	#Sorts, filters tickets.
+	#When a string begins with +/- character: will define sorting, otherwise filtering.
+	def each( args )
+		sortby = args.select{ |v| v =~ /^[\+\-].*$/ }
+		filters = args-sortby
+		statuses = filters.select{ |i| @options.status.include?( i ) }
+		#statuses = filters.select{ |i| @tags.include?( i ) }
+		if statuses.length > 0
+			filtered = @cache.select{ |i| statuses.include?( i.data.status ) }
+		else
+			filtered = @cache
+		end
+		sorted = filtered
+		if sortby.length > 0
+			sort = sortby[0][1, 100]
+			dir = '+'==sortby[0][0,1] ? 1 : -1
+			puts "#{dir} #{sort} #{sortby[0][0]}"
+			sorted = filtered.sort{ |a,b| dir * (a.data.send( sort )<=> b.data.send( sort )) } 
+		end
+		sorted.each do |i|
 			yield( i )
 		end
 	end
@@ -1054,7 +1080,7 @@ end
 # Command line parser
 class MyTixRunner
 
-	VERSION = '0.0.1'
+	VERSION = '0.0.2'
 
 	#Constructor.
 	def initialize
@@ -1154,11 +1180,13 @@ class MyTixRunner
 					exit 0
 				when arguments[0] == "gedit"
 					th = TicketHandler.new( @options )
-					th.filter_by_id( arguments[1] ) do |t|
-						w = GUI::TicketEditDialog.new( @application, t )
-						@application.create
-						w.show
-						@application.run
+					if th.ready_to_run 
+						th.filter_by_id( arguments[1] ) do |t|
+							w = GUI::TicketEditDialog.new( @application, t )
+							@application.create
+							w.show
+							@application.run
+						end
 					end
 					exit 0
 			end
@@ -1176,19 +1204,19 @@ class MyTixRunner
 				exit 0
 			when arguments[0] == "list"
 				th = TicketHandler.new( @options )
-				b = 1 if b == nil
-				a = "created" if a == nil
-				if th.length >0
-					print "Listing Tickets from #{@options.tickets_directory}\n"
-					t = Console::Tabular.new( [ "Id", "Name", "status", "created" ] )
-					th.each( a, b ) do |i|
-						c = nil
-						c = @options.console["colors"][ i.data.severity ] if @options.console and @options.console["colors"]
-						t << { "color"=>c, "cols"=>[ i.idstring, i.data.name, i.data.status, i.data.created ] }
+				if th.ready_to_run 
+					if th.length > 0
+						print "Listing Tickets from #{@options.tickets_directory}\n"
+						t = Console::Tabular.new( [ "Id", "Name", "status", "created" ] )
+						th.each( arguments[1, arguments.length ] ) do |i|
+							c = nil
+							c = @options.console["colors"][ i.data.severity ] if @options.console and @options.console["colors"]
+							t << { "color"=>c, "cols"=>[ i.idstring, i.data.name, i.data.status, i.data.created ] }
+						end
+						t.print
+					else
+						puts "No tickets in the database"
 					end
-					t.print
-				else
-					puts "No tickets in the database"
 				end
 
 				exit 0
