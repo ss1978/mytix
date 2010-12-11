@@ -523,7 +523,6 @@ class TicketHandler
 		else 
 			rebuildCache
 		end
-
 	end
 
 	#Scans filesystem for cache changes, and rebuilds the cache if it's needed.
@@ -549,6 +548,20 @@ class TicketHandler
 		end
 
 		@updated = false
+		
+		removeitems = []
+
+		@cache_for_name.each do | k, v |
+			if not File.directory?( File.join( @options.tickets_directory, k ) )
+				removeitems << [k, v]
+			end 
+		end
+
+		removeitems.reverse_each do |i|
+			@cache.remove( i[0] )
+			@cache_for_name.remove( i[1] )
+		end
+
 
 		Dir.glob( File.join( @options.tickets_directory, "*" ) ) do |f| 
 			bf = File.basename( f )
