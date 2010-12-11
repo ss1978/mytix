@@ -557,6 +557,10 @@ class TicketHandler
 			end 
 		end
 
+		if removeitems.length > 0
+			@updated = true
+		end
+
 		removeitems.reverse_each do |i|
 			@cache.delete_at( i[1] )
 			@cache_for_name.delete( i[0] )
