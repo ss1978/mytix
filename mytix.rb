@@ -553,13 +553,13 @@ class TicketHandler
 
 		@cache_for_name.each do | k, v |
 			if not File.directory?( File.join( @options.tickets_directory, k ) )
-				removeitems << [k, v]
+				removeitems << [k, v["idx"]]
 			end 
 		end
 
 		removeitems.reverse_each do |i|
-			@cache.remove( i[0] )
-			@cache_for_name.remove( i[1] )
+			@cache.delete_at( i[1] )
+			@cache_for_name.delete( i[0] )
 		end
 
 
