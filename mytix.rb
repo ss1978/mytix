@@ -794,7 +794,7 @@ module GUI
 		include TicketEditWindowBase
 	
 		def initialize( app, task = nil )
-			super( app, "Ticket", :opts => DECOR_ALL )
+			super( app, "Ticket", :opts => DECOR_ALL, :width=>640, :height=>400 )
 			creategui( app, ID_CLOSE, task )
 		end
 
@@ -945,7 +945,7 @@ module GUI
 		def populate( list )
 			@iconlist.clearItems
 			
-			getApp().handler.each do |item|
+			getApp().handler.each([]) do |item|
 				
 				color = ""
 				color =  getApp.options.gui["colors"][ item.data.severity ] if getApp.options.gui and getApp.options.gui["colors"] and item.data.severity
