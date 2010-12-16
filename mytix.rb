@@ -917,6 +917,7 @@ module GUI
 			@iconlist.appendHeader("Created", nil, 150)
 			@iconlist.appendHeader("Modified", nil, 150)
 			@iconlist.appendHeader("User", nil, 50)
+			@iconlist.appendHeader("Votes", nil, 50)
 	
 			@iconlistmenu = FXMenuPane.new( self )
 			FXMenuCommand.new( @iconlistmenu, "&New\tCtrl+N\tNew ticket", getApp().icons.find( "16x16/actions/filenew.png" ) ).connect( SEL_COMMAND ) do |obj, sel, par|
@@ -954,7 +955,7 @@ module GUI
 				
 				color = ""
 				color =  getApp.options.gui["colors"][ item.data.severity ] if getApp.options.gui and getApp.options.gui["colors"] and item.data.severity
-				i = ColorizedIconItem.new( "[#{item.idstring}] #{item.data.name}\t#{item.data.severity}\t#{item.data.status}\t#{item.data.created}\t#{item.data.updated}\t#{item.data.created_by}", nil, nil, color,item  )
+				i = ColorizedIconItem.new( "[#{item.idstring}] #{item.data.name}\t#{item.data.severity}\t#{item.data.status}\t#{item.data.created}\t#{item.data.updated}\t#{item.data.created_by}\t#{item.data.vote}", nil, nil, color,item  )
 				@iconlist << i
 			end
 		end
@@ -968,7 +969,7 @@ module GUI
 		def initialize( app, list = [] ) 
 			@mdimenu = nil
 			@mdiclient = nil
-			super( app, "Ticket List", :opts=>DECOR_ALL)
+			super( app, "Ticket List", :opts=>DECOR_ALL, :width => 800, :height => 600 )
 			creategui( app, ID_CLOSE, list )
 		end
 	
@@ -1087,7 +1088,7 @@ module GUI
 			@handler = TicketHandler.new( options )
 			@mainwindow = nil
 			super( "mytix", "IcoNet")	
-			@icons = FXAutoLoadIconDict.new( self, "/usr/share/icons/hicolor:/usr/share/icons/crystalsvg" )
+			@icons = FXAutoLoadIconDict.new( self, "/usr/share/icons/hicolor:/usr/share/icons/crystalsvg:/usr/share/icons/default:/usr/share/icons/gnome" )
 		end
 
 	end
