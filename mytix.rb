@@ -324,6 +324,10 @@ module BOM
 		
 		#The status of the ticket.
 		attr_accessor :status
+		
+		#The votes to the ticket.
+		attr_accessor :vote
+	
 	
 		# Creates the TicketData. 
 		#
@@ -340,6 +344,7 @@ module BOM
 			@updated = DateTime.now()
 			@created_by = Etc.getlogin()
 			@description = ""
+			@vote = 1
 			@tags = []
 			@severity = options.severity[0]
 			@modules = []
@@ -1175,6 +1180,7 @@ class MyTixRunner
 		if @application
 
 			case
+
 				when arguments.length == 0
 					w = GUI::MyTixWindow.new( @application )
 					@application.create
@@ -1182,12 +1188,14 @@ class MyTixRunner
 					w.show
 					@application.run
 					exit 0
+
 				when arguments[0] == "glist"
 					w = GUI::TicketListDialog.new( @application )
 					@application.create
 					w.show
 					@application.run
 					exit 0
+
 				when arguments[0] == "gadd" 
 					t = nil
 					t = BOM::Ticket.new( @options, arguments[1]) if arguments.length > 1
@@ -1196,6 +1204,7 @@ class MyTixRunner
 					w.show
 					@application.run
 					exit 0
+
 				when arguments[0] == "gedit"
 					th = TicketHandler.new( @options )
 					if th.ready_to_run 
@@ -1208,36 +1217,40 @@ class MyTixRunner
 					end
 					exit 0
 			end
+
 		end
 
 		case
+
 			when arguments[0] == "init"
 				File.open( ".mytix.yaml", File::WRONLY|File::TRUNC|File::CREAT) do |f|
 					YAML.dump( @yamlconfig_defaults, f )
 				end
 				exit 0
+
 			when arguments[0] == "add"
 				t = BOM::Ticket.new( @options, arguments[ 1 ] ) 
 				t.save
 				exit 0
+
 			when arguments[0] == "list"
 				th = TicketHandler.new( @options )
 				if th.ready_to_run 
 					if th.length > 0
 						print "Listing Tickets from #{@options.tickets_directory}\n"
-						t = Console::Tabular.new( [ "Id", "Name", "status", "created" ] )
+						t = Console::Tabular.new( [ "Id", "Name", "status", "created", "vote" ] )
 						th.each( arguments[1, arguments.length ] ) do |i|
 							c = nil
 							c = @options.console["colors"][ i.data.severity ] if @options.console and @options.console["colors"]
-							t << { "color"=>c, "cols"=>[ i.idstring, i.data.name, i.data.status, i.data.created ] }
+							t << { "color"=>c, "cols"=>[ i.idstring, i.data.name, i.data.status, i.data.created, i.data.vote ] }
 						end
 						t.print
 					else
 						puts "No tickets in the database"
 					end
 				end
-
 				exit 0
+
 			when arguments[0] == "comment"
 				th = TicketHandler.new( @options )
 				th.filter_by_id( arguments[1]) do |t|
@@ -1245,6 +1258,7 @@ class MyTixRunner
 					t.save() 
 				end
 				exit 0
+
 			when arguments[0] == "attach"
 				th = TicketHandler.new( @options )				
 				th.filter_by_id( arguments[1]) do |t|
@@ -1252,6 +1266,7 @@ class MyTixRunner
 					t.save()
 				end
 				exit 0
+
 			when arguments[0] == "status"
 				th = TicketHandler.new( @options )
 				th.filter_by_id( arguments[1] ) do |t|
@@ -1260,6 +1275,16 @@ class MyTixRunner
 					end
 				end
 				exit 0
+
+			when arguments[0] == "vote"
+				th = TicketHandler.new( @options )
+				th.filter_by_id( arguments[1] ) do |t|
+					if t.data.vote += 1 
+						t.save() 
+					end
+				end
+				exit 0
+
 			when arguments[0] == "show"
 				th = TicketHandler.new( @options )
 				th.filter_by_id( arguments[1] ) do |t|
@@ -1270,6 +1295,7 @@ class MyTixRunner
 					ct << {"cols"=>["Description:", t.data.description ]}
 					ct << {"cols"=>["Status:", t.data.status ]}
 					ct << {"cols"=>["Severity:", t.data.severity ]}
+					ct << {"cols"=>["Votes:", t.data.vote ]}
 					ct << {"cols"=>["Created by:", t.data.created_by ]}
 					ct << {"cols"=>["Created:", t.data.created ]}
 					ct << {"cols"=>["Updated:", t.data.updated ]}
@@ -1304,6 +1330,7 @@ class MyTixRunner
 			when (arguments[0] == "-v" or arguments[0] == "--version" )
       			puts "#{File.basename(__FILE__)} version #{VERSION}"
 				exit 0
+
 			when ( arguments[0] == "-h" or arguments[0] == "--help" )
       			puts "#{File.basename(__FILE__)} version #{VERSION}"
       			RDoc::usage("usage") #exits app
